@@ -280,7 +280,16 @@ set(handles.status,'string',['Status: Data saved and exported to: ',ex_path,ex_f
 
 % --- Executes on button press in clear.
 function clear_Callback(hObject, eventdata, handles)
-if isfield(handles,'select')==0%check to see if fieldname exists
+% Confirm with user that data will be cleared
+button=questdlg('Are you sure you want to clear all datapoints?');
+switch button
+    case 'No'
+        return
+    case 'Cancel'
+        return
+end
+%check to see if fieldname exists
+if isfield(handles,'select')==0
     return
 end
 names=fieldnames(handles.din.select);
