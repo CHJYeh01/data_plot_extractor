@@ -1,0 +1,3 @@
+Author: Joshua Yeh
+Date created: 2017/13/11
+The purpose of this repository is to create a MATLAB GUI that aloows the user to extract data points from a plot image such as .png, .jpg, etc. The data will output an array of x and y datapoints for the user.
