@@ -56,6 +56,7 @@ function data_plot_extractor_v01_OpeningFcn(hObject, eventdata, handles, varargi
 handles.output = hObject;
 set(handles.ref_table,'rowname',{'x','y'},'data',nan(2,2));
 handles.din.num_pts=0;
+handles.din.flag=1;%this flag is set to 1 to define behavior during first iteration of commands
 % Update handles structure
 guidata(hObject, handles);
 
@@ -71,19 +72,21 @@ varargout{1} = handles.output;
 
 % --- Executes on button press in load.
 function load_Callback(hObject, eventdata, handles)
-try
+try%get the file
     [filename,pathname]=uigetfile([handles.din.pathname,'*.*']);
 catch
     [filename,pathname]=uigetfile('*.*');
 end
+%show filepath in tooltip string and string fields
 handles.filename_txt.TooltipString=['<html>filename: ',filename,'<br/> pathname: ',pathname];
-handles.status.String='Status: Plot loaded!';
-handles.filename_txt.String=filename;
-I=imread([pathname,filename]);
+handles.filename_txt.String=filename;%
+handles.status.String='Status: Plot loaded!';%update status bar
+I=imread([pathname,filename]);%read file
 axes(handles.axes1);
-imshow(I);
+imshow(I);%shoe image
 impixelinfo;
 handles.din.imfinfo=imfinfo([pathname,filename]);
+% store and show metadat information of the plot image
 disp(handles.din.imfinfo);
 im_info={['FileModDate: ',handles.din.imfinfo.FileModDate];...
     ['FileSize: ',num2str(handles.din.imfinfo.FileSize)];...
@@ -93,7 +96,7 @@ im_info={['FileModDate: ',handles.din.imfinfo.FileModDate];...
     ['BitDepth: ',num2str(handles.din.imfinfo.BitDepth)];...
     ['ColorType: ',handles.din.imfinfo.ColorType]};
 handles.metadata.String=im_info;
-handles.din.I=I;
+handles.din.I=I;%store image in handles structure
 handles.din.filename=filename;
 handles.din.pathname=pathname;
 guidata(handles.figure1,handles);
@@ -102,9 +105,10 @@ guidata(handles.figure1,handles);
 function origin_Callback(hObject, eventdata, handles)
 try
     delete(handles.din.origin);
+catch
 end
 origin=impoint(handles.axes1);
-setColor(origin,'c');
+setColor(origin,'c');%set color of the origin marker to cyan
 handles.din.origin=origin;
 handles.din.origin_pos=getPosition(origin);
 handles.origin.TooltipString=['<html>X position: ',num2str(handles.din.origin_pos(1)),'<br/>Y position: ',num2str(handles.din.origin_pos(2))];
@@ -117,7 +121,7 @@ try
     delete(handles.din.x_end);
 end
 x_end=impoint(handles.axes1);
-setColor(x_end,'b');
+setColor(x_end,'b');%set color of the x reference marker to blue
 handles.din.x_end=x_end;
 handles.din.x_end_pos=getPosition(x_end);
 handles.x_end.TooltipString=['<html>X position: ',num2str(handles.din.x_end_pos(1)),'<br/>Y position: ',num2str(handles.din.x_end_pos(2))];
@@ -130,7 +134,7 @@ try
     delete(handles.din.y_end);
 end
 y_end=impoint(handles.axes1);
-setColor(y_end,'r');
+setColor(y_end,'r');%set color of the y reference maker to red
 handles.din.y_end=y_end;
 handles.din.y_end_pos=getPosition(y_end);
 handles.y_end.TooltipString=['<html>X position: ',num2str(handles.din.y_end_pos(1)),'<br/>Y position: ',num2str(handles.din.y_end_pos(2))];
@@ -159,14 +163,15 @@ else
 end
 
 function handles=ref_pts(handles)
-num_pts=handles.din.num_pts;
-handles.din.num_pts=num_pts;
+%this fucntion converts the pixel values to meaningful values
+num_pts=handles.din.num_pts;%total number of points
+%return the function if there are no values
 try names=fieldnames(handles.din.select);
 catch
     handles.uitable2.Data=[];
     return    
 end
-ref_data=handles.ref_table.Data;
+ref_data=handles.ref_table.Data;%get reference data
 xdat2pix=(ref_data(1,2)-ref_data(1,1))/(handles.din.x_end_pos(1)-handles.din.origin_pos(1));
 ydat2pix=(ref_data(2,2)-ref_data(2,1))/(handles.din.y_end_pos(2)-handles.din.origin_pos(2));
 sel_data=nan(length(names),3);
@@ -196,6 +201,7 @@ handles.status.String='Status: handles structure exported to base workspace!';
 
 % --- Executes on button press in refresh.
 function refresh_Callback(hObject, eventdata, handles)
+% Refresh the values of selected datapoints
 try
     handles.din.origin_pos=getPosition(handles.din.origin);
     handles.din.x_end_pos=getPosition(handles.din.x_end);
@@ -215,15 +221,27 @@ function export_Callback(hObject, eventdata, handles)
 disp('Saving...');
 set(handles.status,'string','Status: Saving...');
 data=handles.uitable2.Data;
+if iscell(data)==1
+    disp('No data selected!');
+    return
+end
 include=find(data(:,3)==1);
 export_data=data(include,1:2);
 [~,index]=sort(export_data(:,1));
 export_data=export_data(index,:);
 metadata={'Data extracted with: ',handles.figure1.UserData};
 try
-    [ex_file,ex_path]=uiputfile([handles.din.ex_path,'*.mat']);
+    if handles.din.flag==1
+        [ex_file,ex_path]=uiputfile([handles.din.pathname,'*.mat']);
+    else
+        [ex_file,ex_path]=uiputfile([handles.din.ex_path,'*.mat']);
+    end
 catch
     [ex_file,ex_path]=uiputfile('*.mat');
+end
+if ex_file==0
+    disp('Export cancelled!')
+    return
 end
 handles.din.ex_path=ex_path;
 guidata(handles.figure1,handles);
