@@ -1,0 +1,2 @@
+# Do not include any of the temporary .asv MATLAB files
+*.asv
