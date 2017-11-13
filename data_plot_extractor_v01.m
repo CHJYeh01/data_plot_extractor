@@ -144,6 +144,15 @@ guidata(handles.figure1,handles);
 function select_Callback(hObject, eventdata, handles)
 num_pts=handles.din.num_pts;
 if hObject.Value==1
+    %Get state of zoom and pan tools
+    default{1}=handles.uitoggletool1.State;
+    default{2}=handles.uitoggletool2.State;
+    default{3}=handles.uitoggletool3.State;
+    %turn off zoom and pan tools and clear button
+    set(handles.uitoggletool1,'state','off','visible','off');
+    set(handles.uitoggletool2,'state','off','visible','off');
+    set(handles.uitoggletool3,'state','off','visible','off');
+    set(handles.clear,'visible','off');
     while hObject.Value==1
         try
             num_pts=num_pts+1;
@@ -152,9 +161,28 @@ if hObject.Value==1
             disp(['Datapt ',num2str(num_pts),' selected!']);
             set(handles.status,'string',['Datapt ',num2str(num_pts),' selected!']);
             handles.din.num_pts=num_pts;
-            guidata(handles.figure1,handles);
+            guidata(handles.figure1,handles);            
         end
     end
+    %re-enable zoom and pan tools and clear button
+    set(handles.uitoggletool1,'state',default{1},'visible','on');
+    set(handles.uitoggletool2,'state',default{2},'visible','on');
+    set(handles.uitoggletool3,'state',default{3},'visible','on');
+    if strcmp(default{1},'on')
+        h=zoom(handles.figure1);
+        h.Enable=default{1};
+        h.Direction='in';
+    end
+    if strcmp(default{2},'on')
+        h=zoom(handles.figure1);
+        h.Enable=default{2};
+        h.Direction='out';
+    end
+    if strcmp(default{3},'on')
+        h=pan(handles.figure1);
+        h.Enable=default{3};
+    end
+    set(handles.clear,'visible','on');
     try
         handles=ref_pts(handles);
     end
@@ -221,7 +249,7 @@ function export_Callback(hObject, eventdata, handles)
 disp('Saving...');
 set(handles.status,'string','Status: Saving...');
 data=handles.uitable2.Data;
-if iscell(data)==1
+if iscell(data)==1||isempty(data)==1
     disp('No data selected!');
     return
 end
@@ -252,13 +280,14 @@ set(handles.status,'string',['Status: Data saved and exported to: ',ex_path,ex_f
 
 % --- Executes on button press in clear.
 function clear_Callback(hObject, eventdata, handles)
-try
+if isfield(handles,'select')==0%check to see if fieldname exists
+    return
+end
 names=fieldnames(handles.din.select);
-
 for dum=1:length(names)
     delete(handles.din.select.(names{dum}));    
 end
-end
+
 if isfield(handles.din,'select')
     handles.din=rmfield(handles.din,'select');
 end
